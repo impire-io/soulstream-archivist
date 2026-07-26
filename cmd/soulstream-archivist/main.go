@@ -20,9 +20,8 @@ import (
 
 	"github.com/impire-io/soulstream-archivist/internal/archive"
 	"github.com/impire-io/soulstream-archivist/internal/keeper"
+	"github.com/impire-io/soulstream-archivist/internal/version"
 )
-
-var version = "dev"
 
 func main() {
 	os.Exit(run(os.Args[1:]))
@@ -39,8 +38,10 @@ func run(args []string) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	if *showVersion {
-		fmt.Println(version)
+	// Version must always answer — via the --version flag or the bare "version"
+	// subcommand — before any configuration can be missing or wrong.
+	if *showVersion || fs.Arg(0) == "version" {
+		fmt.Println(version.Version)
 		return 0
 	}
 	if *realmName == "" {
