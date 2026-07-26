@@ -93,14 +93,13 @@ type Hit struct {
 }
 
 // Search walks the archive for operations whose content, author, type, or topic
-// contains the query (case-insensitive). Deliberately unsophisticated: the
+// satisfies the query (case-insensitive). Deliberately unsophisticated: the
 // convention grades answers, it does not require clever retrieval. Results are
 // capped at limit (≤ 0 means 5).
 func (s *Store) Search(query string, limit int) ([]Hit, error) {
 	if limit <= 0 {
 		limit = 5
 	}
-	q := strings.ToLower(strings.TrimSpace(query))
 	var hits []Hit
 	err := s.walk(func(ex record.Exhibit) error {
 		if len(hits) >= limit {
@@ -111,7 +110,7 @@ func (s *Store) Search(query string, limit int) ([]Hit, error) {
 			return nil // skip corrupted files, keep serving
 		}
 		haystack := strings.ToLower(ex.Binding + " " + rec.Author + " " + rec.Type + " " + string(rec.Payload))
-		if q != "" && !strings.Contains(haystack, q) {
+		if !queryMatches(haystack, query) {
 			return nil
 		}
 		hits = append(hits, Hit{
@@ -121,6 +120,51 @@ func (s *Store) Search(query string, limit int) ([]Hit, error) {
 		return nil
 	})
 	return hits, err
+}
+
+// queryMatches reports whether an already-lowercased haystack satisfies query. A
+// full-sentence query rarely appears verbatim in any one op, so beyond the whole
+// trimmed query as a substring (which keeps every prior match matching) an op
+// also matches when ALL of the query's tokens appear as substrings — split on
+// non-alphanumeric runs, tokens shorter than two characters dropped. An empty
+// query matches everything, as an empty filter should.
+func queryMatches(haystack, query string) bool {
+	q := strings.ToLower(strings.TrimSpace(query))
+	if q == "" {
+		return true
+	}
+	if strings.Contains(haystack, q) {
+		return true
+	}
+	tokens := tokenize(q)
+	if len(tokens) == 0 {
+		return false
+	}
+	for _, tok := range tokens {
+		if !strings.Contains(haystack, tok) {
+			return false
+		}
+	}
+	return true
+}
+
+// tokenize splits an already-lowercased string into search tokens on any run of
+// non-alphanumeric characters, dropping tokens shorter than two characters (which
+// carry no useful signal and would match almost anything).
+func tokenize(s string) []string {
+	fields := strings.FieldsFunc(s, func(r rune) bool { return !isTokenRune(r) })
+	tokens := fields[:0]
+	for _, f := range fields {
+		if len(f) >= 2 {
+			tokens = append(tokens, f)
+		}
+	}
+	return tokens
+}
+
+// isTokenRune is the alphanumeric class a lowercased search token is built from.
+func isTokenRune(r rune) bool {
+	return r >= 'a' && r <= 'z' || r >= '0' && r <= '9'
 }
 
 func (s *Store) walk(fn func(record.Exhibit) error) error {

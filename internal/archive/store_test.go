@@ -116,6 +116,52 @@ func TestStoreSearch(t *testing.T) {
 	}
 }
 
+func TestStoreSearchTokens(t *testing.T) {
+	s, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An op whose text carries every roadmap-query word, but never as the
+	// contiguous sentence — the old whole-query substring match missed it.
+	if err := s.Put(testExhibit(t, "planning-r0ad", "on the roadmap: what is next this quarter")); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Put(testExhibit(t, "onboarding-a1b2", "welcome aboard, the cadence is weekly")); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name  string
+		query string
+		want  int // hits against the roadmap op ("planning-r0ad")
+	}{
+		{"full sentence, all tokens present, not contiguous", "what is next on the roadmap", 1},
+		{"case-insensitive tokens", "WHAT IS NEXT ON THE ROADMAP", 1},
+		{"whole-query substring still accepted", "on the roadmap", 1},
+		{"single token behaves as before", "roadmap", 1},
+		{"missing token stays silent", "roadmap timeline", 0},
+		{"nonsense stays silent", "quantum entanglement", 0},
+		{"sub-two-char token dropped, not required to be present", "roadmap 9", 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			hits, err := s.Search(tc.query, 5)
+			if err != nil {
+				t.Fatalf("search %q: %v", tc.query, err)
+			}
+			got := 0
+			for _, h := range hits {
+				if h.Topic == "planning-r0ad" {
+					got++
+				}
+			}
+			if got != tc.want {
+				t.Errorf("search %q hit the roadmap op %d times, want %d (all hits: %+v)", tc.query, got, tc.want, hits)
+			}
+		})
+	}
+}
+
 func TestStoreState(t *testing.T) {
 	s, err := Open(t.TempDir())
 	if err != nil {
