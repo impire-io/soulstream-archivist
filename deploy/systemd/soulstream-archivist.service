@@ -1,0 +1,39 @@
+# systemd template for the Soulstream archivist (Linux).
+#
+# Replace every UPPERCASE placeholder, then install:
+#
+#   BINARY_PATH   absolute path to the soulstream-archivist binary
+#                 (e.g. /usr/local/bin/soulstream-archivist)
+#   NATS_CONTEXT  named NATS context to connect through
+#   REALM         realm to archive
+#   PERSONA       persona this archivist serves as (e.g. archivist)
+#   KEY_FILE      signing-seed file from `soulstream key init`
+#                 (drop the SOULSTREAM_KEY_FILE line to serve unsigned)
+#
+# Install (system service):
+#
+#   sudo cp soulstream-archivist.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now soulstream-archivist
+#
+# Follow the logs with: journalctl -u soulstream-archivist -f
+
+[Unit]
+Description=Soulstream archivist — a realm's historian
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=BINARY_PATH
+Restart=always
+RestartSec=5
+Environment=SOULSTREAM_CONTEXT=NATS_CONTEXT
+Environment=SOULSTREAM_REALM=REALM
+Environment=SOULSTREAM_PERSONA=PERSONA
+Environment=SOULSTREAM_KEY_FILE=KEY_FILE
+# Optional: pin the archive location (defaults to the service user's config dir).
+# Environment=SOULSTREAM_ARCHIVIST_DATA=/var/lib/soulstream-archivist
+
+[Install]
+WantedBy=multi-user.target

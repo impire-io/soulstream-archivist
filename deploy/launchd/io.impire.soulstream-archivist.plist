@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd template for the Soulstream archivist (macOS).
+
+  Replace every UPPERCASE placeholder, then install:
+
+    BINARY_PATH   absolute path to the soulstream-archivist binary
+                  (e.g. /Users/you/go/bin/soulstream-archivist)
+    NATS_CONTEXT  named NATS context to connect through
+    REALM         realm to archive
+    PERSONA       persona this archivist serves as (e.g. archivist)
+    KEY_FILE      signing-seed file from `soulstream key init`
+                  (omit the --key-file pair to serve unsigned)
+    LOG_DIR       existing directory for the stdout/stderr logs
+
+  Install (per-user LaunchAgent):
+
+    cp io.impire.soulstream-archivist.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/io.impire.soulstream-archivist.plist
+
+  Tail the logs with: tail -f LOG_DIR/soulstream-archivist.out.log
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.impire.soulstream-archivist</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>BINARY_PATH</string>
+    <string>--context</string>
+    <string>NATS_CONTEXT</string>
+    <string>--realm</string>
+    <string>REALM</string>
+    <string>--persona</string>
+    <string>PERSONA</string>
+    <string>--key-file</string>
+    <string>KEY_FILE</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>LOG_DIR/soulstream-archivist.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>LOG_DIR/soulstream-archivist.err.log</string>
+</dict>
+</plist>
