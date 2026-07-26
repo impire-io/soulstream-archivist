@@ -1,0 +1,49 @@
+version: 2
+
+project_name: soulstream-archivist
+
+builds:
+  - id: soulstream-archivist
+    main: ./cmd/soulstream-archivist
+    binary: soulstream-archivist
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/impire-io/soulstream-archivist/internal/version.Version={{.Version}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+# One archive per platform.
+archives:
+  - id: soulstream-archivist
+    ids: [soulstream-archivist]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs"
+      - "^test"
+      - "^chore"
+
+release:
+  github:
+    owner: impire-io
+    name: soulstream-archivist
+  draft: false
+  prerelease: auto
