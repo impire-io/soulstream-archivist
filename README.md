@@ -24,11 +24,22 @@ one, or several; several may disagree, which is honest.
 - **Declares its blind spot**: retention is not retrofittable. The first run
   stamps `coverage_from` — "my notes start here" — and every answer carries it.
 
-## Run
+## Install
+
+From source (Go 1.26+):
 
 ```sh
 go install github.com/impire-io/soulstream-archivist/cmd/soulstream-archivist@latest
+```
 
+Or download a prebuilt binary for your platform (Linux, macOS, or Windows,
+amd64/arm64) from the
+[releases page](https://github.com/impire-io/soulstream-archivist/releases).
+Confirm the build with `soulstream-archivist --version`.
+
+## Run
+
+```sh
 soulstream-archivist \
   --context personal --realm soulstream --persona archivist \
   --key-file ~/.config/soulstream/soulstream-archivist.ed25519
@@ -45,6 +56,29 @@ signatures either way).
 Give the archivist its own persona and, ideally, its own key — then publish its
 profile (`soulstream profile publish`) and let its operator attest it
 (`soulstream profile attest archivist`), like any other operated persona.
+
+## Run as a service
+
+To keep an archivist up across reboots, use the templates under
+[`deploy/`](deploy):
+[`deploy/launchd/io.impire.soulstream-archivist.plist`](deploy/launchd/io.impire.soulstream-archivist.plist)
+for macOS (a LaunchAgent) and
+[`deploy/systemd/soulstream-archivist.service`](deploy/systemd/soulstream-archivist.service)
+for Linux. Both are templates: fill in the UPPERCASE placeholders
+(`BINARY_PATH`, `NATS_CONTEXT`, `REALM`, `PERSONA`, `KEY_FILE`, and — on launchd
+— `LOG_DIR`) with your values, either by editing the file or with `sed`:
+
+```sh
+sed -e "s#BINARY_PATH#$(command -v soulstream-archivist)#" \
+    -e 's#NATS_CONTEXT#personal#' -e 's#REALM#soulstream#' \
+    -e 's#PERSONA#archivist#' \
+    -e "s#KEY_FILE#$HOME/.config/soulstream/soulstream-archivist.ed25519#" \
+    deploy/systemd/soulstream-archivist.service \
+  | sudo tee /etc/systemd/system/soulstream-archivist.service
+```
+
+Each template's header comment carries the exact install and log-tailing
+commands (`launchctl load …` for macOS, `systemctl enable --now …` for Linux).
 
 ## The contract this is built on
 
