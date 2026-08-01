@@ -3,7 +3,7 @@ module github.com/impire-io/soulstream-archivist
 go 1.26.2
 
 require (
-	github.com/impire-io/soulstream v0.4.0
+	github.com/impire-io/soulstream v0.6.0
 	github.com/nats-io/nats-server/v2 v2.14.3
 	github.com/nats-io/nats.go v1.52.0
 )

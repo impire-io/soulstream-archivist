@@ -12,7 +12,7 @@ import (
 	"github.com/impire-io/soulstream/realm"
 	"github.com/impire-io/soulstream/topic"
 
-	"github.com/impire-io/soulstream-archivist/internal/archive"
+	"github.com/impire-io/soulstream-archivist/archive"
 	"github.com/impire-io/soulstream-archivist/internal/natstest"
 )
 
@@ -22,7 +22,13 @@ func client(t *testing.T, url, persona string, key *identity.SigningKey) *realm.
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	c, err := realm.NewClient(context.Background(), nc, realm.Config{Realm: "test-realm", Persona: persona, Signer: key})
+	// A missing key must leave Signer unset: a typed-nil *SigningKey in the
+	// interface field is refused at construction (soulstream 017's guard).
+	cfg := realm.Config{Realm: "test-realm", Persona: persona}
+	if key != nil {
+		cfg.Signer = key
+	}
+	c, err := realm.NewClient(context.Background(), nc, cfg)
 	if err != nil {
 		nc.Close()
 		t.Fatalf("client: %v", err)

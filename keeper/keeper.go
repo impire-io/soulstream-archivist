@@ -3,6 +3,11 @@
 // retrofittable — and serve what is kept through the memory convention's public
 // witness surface. Built exclusively on the soulstream library's exported
 // surface; there is nothing privileged here, only diligence.
+//
+// The package is public on purpose: it is the archivist's embed seam. A
+// process that already holds a *realm.Client (a bundled distribution such
+// as soulnode) runs the archivist in-process with Run + Witness +
+// topic.RespondMemory — exactly what cmd/soulstream-archivist wires.
 package keeper
 
 import (
@@ -18,7 +23,7 @@ import (
 	"github.com/impire-io/soulstream/record"
 	"github.com/impire-io/soulstream/topic"
 
-	"github.com/impire-io/soulstream-archivist/internal/archive"
+	"github.com/impire-io/soulstream-archivist/archive"
 )
 
 // Run archives the realm's op-log into store until ctx ends: an ordered read of

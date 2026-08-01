@@ -18,9 +18,9 @@ import (
 	"github.com/impire-io/soulstream/realm"
 	"github.com/impire-io/soulstream/topic"
 
-	"github.com/impire-io/soulstream-archivist/internal/archive"
-	"github.com/impire-io/soulstream-archivist/internal/keeper"
+	"github.com/impire-io/soulstream-archivist/archive"
 	"github.com/impire-io/soulstream-archivist/internal/version"
+	"github.com/impire-io/soulstream-archivist/keeper"
 )
 
 func main() {
@@ -74,9 +74,13 @@ func run(args []string) int {
 		fmt.Println("no signing key — answers and exhibits will be served unsigned (testimony-grade transport)")
 	}
 
-	c, err := realm.Connect(ctx, realm.Config{
-		ContextName: *ctxName, Realm: *realmName, Persona: *persona, Signer: signer,
-	})
+	// A missing key must leave Signer unset: a typed-nil *SigningKey in the
+	// interface field is refused at construction (soulstream 017's guard).
+	cfg := realm.Config{ContextName: *ctxName, Realm: *realmName, Persona: *persona}
+	if signer != nil {
+		cfg.Signer = signer
+	}
+	c, err := realm.Connect(ctx, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "soulstream-archivist: %v\n", err)
 		return 1
@@ -107,10 +111,12 @@ func run(args []string) int {
 	// re-read so the witness declares what the state file actually says.
 	st, _ = store.LoadState()
 	w := keeper.Witness(store, st.CoverageFrom)
-	w.OnServed = func(kind string, n int) {
-		if n >= 0 {
-			fmt.Printf("served %s: %d\n", kind, n)
+	w.OnServed = func(kind string, n int, err error) {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "serve %s failed: %v\n", kind, err)
+			return
 		}
+		fmt.Printf("served %s: %d\n", kind, n)
 	}
 	witnessErr := make(chan error, 1)
 	go func() { witnessErr <- topic.RespondMemory(ctx, c, w) }()

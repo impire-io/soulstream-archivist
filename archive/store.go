@@ -1,7 +1,11 @@
-// Package archive is the archivist's private store: exhibits captured verbatim
+// Package archive is the archivist's store: exhibits captured verbatim
 // while they were live, kept as plain files. The memory convention never sees
 // this shape — it is served through the public witness surface — so it stays as
 // boring as possible: one JSON document per operation, one JSON file of state.
+//
+// Public as half of the archivist's embed seam (keeper is the other half):
+// an embedding process opens the store on its own state directory and hands
+// it to keeper.Run / keeper.Witness.
 package archive
 
 import (
